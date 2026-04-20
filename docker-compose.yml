@@ -1,0 +1,13 @@
+services:
+  khata:
+    build: .
+    container_name: khata
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+    # Web UI lands Weekend 2. For now, run sync in one-shot mode:
+    #   docker compose run --rm khata khata sync --broker dhan
+    command: ["tail", "-f", "/dev/null"]
