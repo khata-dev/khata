@@ -1,0 +1,60 @@
+name: Broker adapter request
+description: Ask for a new broker to be supported (or signal you're working on one).
+title: "[adapter] "
+labels: ["broker-adapter"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        khata's adapter SDK is designed so a new broker takes ~200 LOC. See [`docs/ADAPTERS.md`](https://github.com/khata-dev/khata/blob/main/docs/ADAPTERS.md) for the contract. PRs welcome.
+
+  - type: input
+    id: broker
+    attributes:
+      label: Broker name
+      placeholder: "e.g., Zerodha / Kite"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: auth
+    attributes:
+      label: Auth model
+      options:
+        - Long-lived token
+        - OAuth (refresh works)
+        - Daily interactive login
+        - TOTP-based session
+        - No retail API (contract-note parsing only)
+        - Other / unknown
+    validations:
+      required: true
+
+  - type: input
+    id: docs
+    attributes:
+      label: Developer docs URL
+      placeholder: "https://..."
+
+  - type: textarea
+    id: endpoints
+    attributes:
+      label: Key endpoints (if you know them)
+      description: "Orders, trades, positions, holdings, postback webhook, charges. What's the shape?"
+      render: markdown
+
+  - type: input
+    id: rate-limits
+    attributes:
+      label: Rate limits (if documented)
+
+  - type: dropdown
+    id: status
+    attributes:
+      label: Are you working on this?
+      options:
+        - "Just requesting"
+        - "Willing to contribute"
+        - "Actively implementing — PR incoming"
+    validations:
+      required: true

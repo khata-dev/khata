@@ -27,6 +27,6 @@ def fmt_rupees(paise: int | None) -> str:
         grouped = i
     else:
         head, tail = i[:-3], i[-3:]
-        head = ",".join([head[max(0, i - 2):i] for i in range(len(head), 0, -2)][::-1])
+        head = ",".join([head[max(0, i - 2) : i] for i in range(len(head), 0, -2)][::-1])
         grouped = f"{head},{tail}"
     return f"{sign}₹{grouped}.{dec}"

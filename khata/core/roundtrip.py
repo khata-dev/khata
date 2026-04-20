@@ -30,7 +30,7 @@ class _Lot:
 
 @dataclass
 class _TradeState:
-    direction: str                   # 'LONG' | 'SHORT'
+    direction: str  # 'LONG' | 'SHORT'
     symbol: str
     underlying: str | None
     instrument_type: str
@@ -38,10 +38,10 @@ class _TradeState:
     strike_paise: int | None
     expiry: str | None
     entry_ts: str
-    opened_qty: int = 0              # total qty opened (for avg_entry)
-    entry_cost_paise: int = 0        # Σ qty * price for openings
+    opened_qty: int = 0  # total qty opened (for avg_entry)
+    entry_cost_paise: int = 0  # Σ qty * price for openings
     closed_qty: int = 0
-    exit_proceeds_paise: int = 0     # Σ qty * price for closings
+    exit_proceeds_paise: int = 0  # Σ qty * price for closings
     fees_paise: int = 0
     exit_ts: str | None = None
     legs: list[tuple[int, str, int]] = field(default_factory=list)  # (exec_id, role, qty)
@@ -76,8 +76,7 @@ def rebuild_trades(conn: sqlite3.Connection, user_id: int) -> dict:
     conn.execute("BEGIN")
     try:
         conn.execute(
-            "DELETE FROM trade_legs WHERE trade_id IN "
-            "(SELECT id FROM trades WHERE user_id = ?)",
+            "DELETE FROM trade_legs WHERE trade_id IN (SELECT id FROM trades WHERE user_id = ?)",
             (user_id,),
         )
         conn.execute("DELETE FROM trades WHERE user_id = ?", (user_id,))
@@ -137,9 +136,8 @@ def _process_contract(
                 remaining = 0
                 continue
 
-            is_extending = (
-                (current.direction == "LONG" and e["side"] == "BUY")
-                or (current.direction == "SHORT" and e["side"] == "SELL")
+            is_extending = (current.direction == "LONG" and e["side"] == "BUY") or (
+                current.direction == "SHORT" and e["side"] == "SELL"
             )
 
             if is_extending:

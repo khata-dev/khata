@@ -1,0 +1,9 @@
+# Default owner for everything not otherwise specified.
+* @SwathiMystery
+
+# Broker adapters — opinions welcome from the community; maintainers sign off.
+/khata/adapters/  @SwathiMystery
+
+# Security-sensitive paths.
+/khata/config.py  @SwathiMystery
+/docs/SECURITY.md @SwathiMystery

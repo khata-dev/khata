@@ -32,9 +32,7 @@ class DhanAdapter(BrokerAdapter):
             data={"client": client, "client_id": client_id},
         )
 
-    def fetch_trades(
-        self, session: Session, since: datetime
-    ) -> list[CanonicalExecution]:
+    def fetch_trades(self, session: Session, since: datetime) -> list[CanonicalExecution]:
         client: DhanClient = session.data["client"]
         today = datetime.now(UTC).date()
         since_date = since.astimezone(UTC).date()
@@ -61,8 +59,6 @@ class DhanAdapter(BrokerAdapter):
         # Left as a stub for Weekend 1 — positions mapper lands with the web UI work.
         return []
 
-    def fetch_orders(
-        self, session: Session, on_date: date
-    ) -> list[CanonicalOrder]:
+    def fetch_orders(self, session: Session, on_date: date) -> list[CanonicalOrder]:
         # Stub: order-book mapper lands with the UI work.
         return []

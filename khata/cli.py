@@ -32,9 +32,7 @@ def _load_creds(broker: str, user_id: int) -> dict:
     if broker == "dhan":
         c = DhanCreds.from_env()
         if not c:
-            raise typer.BadParameter(
-                "DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN must be set in .env"
-            )
+            raise typer.BadParameter("DHAN_CLIENT_ID and DHAN_ACCESS_TOKEN must be set in .env")
         return {"client_id": c.client_id, "access_token": c.access_token, "user_id": user_id}
     raise typer.BadParameter(f"Unknown broker: {broker}")
 
@@ -126,7 +124,11 @@ def stats() -> None:
     t.add_row("wins", str(row["wins"] or 0))
     t.add_row("losses", str(row["losses"] or 0))
     t.add_row("open", str(row["open"] or 0))
-    wr = (row["wins"] / (row["wins"] + row["losses"]) * 100) if (row["wins"] or 0) + (row["losses"] or 0) else 0
+    wr = (
+        (row["wins"] / (row["wins"] + row["losses"]) * 100)
+        if (row["wins"] or 0) + (row["losses"] or 0)
+        else 0
+    )
     t.add_row("win rate", f"{wr:.1f}%")
     t.add_row("net P&L", fmt_rupees(row["net"]))
     console.print(t)
@@ -165,7 +167,14 @@ def dump_executions(limit: int = 20) -> None:
     for c in ("broker", "symbol", "side", "qty", "price", "ts"):
         t.add_column(c)
     for r in rows:
-        t.add_row(r["broker"], r["symbol"], r["side"], str(r["qty"]), fmt_rupees(r["price_paise"]), r["ts"])
+        t.add_row(
+            r["broker"],
+            r["symbol"],
+            r["side"],
+            str(r["qty"]),
+            fmt_rupees(r["price_paise"]),
+            r["ts"],
+        )
     console.print(t)
 
 

@@ -7,7 +7,7 @@ resulting trades. This is the unit test that guards FIFO correctness forever.
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -41,12 +41,12 @@ def _ins(conn, *, ts, side, qty, price_paise, symbol="NIFTY-TEST", broker_trade_
 
 
 def _ts(offset_min=0):
-    return datetime(2026, 4, 15, 9, 30, tzinfo=timezone.utc) + timedelta(minutes=offset_min)
+    return datetime(2026, 4, 15, 9, 30, tzinfo=UTC) + timedelta(minutes=offset_min)
 
 
 def test_simple_round_trip(conn):
-    _ins(conn, ts=_ts(0), side="BUY", qty=100, price_paise=10000)    # ₹100
-    _ins(conn, ts=_ts(5), side="SELL", qty=100, price_paise=10500)   # ₹105
+    _ins(conn, ts=_ts(0), side="BUY", qty=100, price_paise=10000)  # ₹100
+    _ins(conn, ts=_ts(5), side="SELL", qty=100, price_paise=10500)  # ₹105
 
     rebuild_trades(conn, user_id=1)
     rows = conn.execute("SELECT * FROM trades").fetchall()
@@ -58,7 +58,7 @@ def test_simple_round_trip(conn):
     assert t["qty"] == 100
     assert t["avg_entry_paise"] == 10000
     assert t["avg_exit_paise"] == 10500
-    assert t["gross_pnl_paise"] == 50000     # 100 * (10500-10000)
+    assert t["gross_pnl_paise"] == 50000  # 100 * (10500-10000)
     assert t["duration_s"] == 300
 
 
@@ -73,7 +73,7 @@ def test_scale_in_then_full_exit(conn):
     assert len(rows) == 1
     t = rows[0]
     assert t["qty"] == 100
-    assert t["avg_entry_paise"] == 10100     # (50*100 + 50*102)/100
+    assert t["avg_entry_paise"] == 10100  # (50*100 + 50*102)/100
     assert t["gross_pnl_paise"] == (10500 - 10100) * 100
 
 
@@ -86,7 +86,7 @@ def test_partial_exit_leaves_trade_open(conn):
 
     assert len(rows) == 1
     assert rows[0]["status"] == "OPEN"
-    assert rows[0]["qty"] == 100             # opened qty
+    assert rows[0]["qty"] == 100  # opened qty
     assert rows[0]["gross_pnl_paise"] is None  # still open
 
 

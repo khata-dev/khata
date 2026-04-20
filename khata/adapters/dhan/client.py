@@ -37,9 +37,7 @@ class DhanClient:
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        self._client = httpx.Client(
-            base_url=API_BASE, headers=self._headers, timeout=timeout
-        )
+        self._client = httpx.Client(base_url=API_BASE, headers=self._headers, timeout=timeout)
         self._last_call: dict[str, float] = {}
 
     # ── read endpoints ────────────────────────────────────────────────

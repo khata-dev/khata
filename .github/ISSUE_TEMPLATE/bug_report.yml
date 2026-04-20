@@ -1,0 +1,71 @@
+name: Bug report
+description: Something broke or behaved wrongly.
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. A good bug report saves us a round-trip — please include reproduction steps.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see?
+      placeholder: "Running `khata sync --broker dhan` raised ... "
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Command(s) run, sample data if relevant. Redact broker tokens and account IDs.
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: khata version
+      description: Output of `khata --version` or git SHA.
+      placeholder: "0.0.1 or commit c9fd9b0"
+    validations:
+      required: true
+
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.4"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options:
+        - Linux
+        - macOS
+        - Windows (WSL)
+        - Other
+
+  - type: input
+    id: broker
+    attributes:
+      label: Broker (if relevant)
+      placeholder: "dhan"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / tracebacks
+      render: shell
