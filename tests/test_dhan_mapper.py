@@ -121,3 +121,110 @@ def test_mapper_handles_missing_na_exchange_time():
     row["createTime"] = "NA"
     e = map_trade(row)
     assert e.ts.tzinfo is UTC  # defaulted to now, no exception
+
+
+# ── unsettled today rows: hyphenated tradingSymbol + 'NA' drvOptionType + no fees ──
+def test_underlying_handles_hyphenated_tradingSymbol():
+    """Today's /trades returns 'NIFTY-Apr2026-24300-PE' with null customSymbol.
+    Extractor must stop at first hyphen, not at 'Apr'."""
+    row = _load("trades_today_unsettled.json")[0]
+    assert row["tradingSymbol"] == "NIFTY-Apr2026-24300-PE"
+    assert row["customSymbol"] is None
+    e = map_trade(row)
+    assert e.underlying == "NIFTY"
+
+
+def test_option_type_falls_back_to_symbol_when_drv_is_na():
+    """drvOptionType='NA' is common on today's rows. Parser must read the
+    '-PE' suffix off tradingSymbol instead."""
+    row = _load("trades_today_unsettled.json")[0]
+    assert row["drvOptionType"] == "NA"
+    e = map_trade(row)
+    assert e.option_type == OptionType.PE
+
+
+def test_option_type_still_preferred_from_drv_when_valid():
+    """Don't regress the primary path: if drvOptionType is populated, use it."""
+    row = _load("trades_today.json")[0]
+    assert row["drvOptionType"] == "PUT"
+    e = map_trade(row)
+    assert e.option_type == OptionType.PE
+
+
+def test_unsettled_row_maps_with_zero_fees():
+    """The mapper doesn't invent fees. Recompute happens at adapter layer."""
+    row = _load("trades_today_unsettled.json")[0]
+    e = map_trade(row)
+    assert e.fees.total_paise == 0
+
+
+# ── charges_for: Indian F&O fee recomputation ─────────────────────────
+def test_charges_for_computes_standard_fno_fees():
+    from khata.adapters.dhan.fees import compute_fno_options_fees
+
+    row = _load("trades_today_unsettled.json")[0]  # BUY 195 @ ₹100.20
+    e = map_trade(row)
+    fees = compute_fno_options_fees(e)
+
+    # Turnover = 195 * 100.20 = ₹19,539
+    # Brokerage = min(₹20, 19539 * 0.0003) = min(20, 5.86) = ₹5.86
+    assert 500 <= fees.brokerage_paise <= 600  # ~₹5.86 = 586 paise
+    # STT BUY side only for options = 0
+    assert fees.stt_paise == 0
+    # Stamp duty on BUY = 0.003% of 19539 = ~₹0.59
+    assert 50 <= fees.stamp_paise <= 70
+    # Exchange txn = 0.03503% of 19539 = ~₹6.84
+    assert 650 <= fees.exch_txn_paise <= 750
+    # Total > 0
+    assert fees.total_paise > 0
+
+
+def test_charges_for_sell_adds_stt():
+    from khata.adapters.dhan.fees import compute_fno_options_fees
+
+    row = _load("trades_today_unsettled.json")[1]  # SELL 195 @ ₹88
+    e = map_trade(row)
+    fees = compute_fno_options_fees(e)
+
+    # Turnover = 195 * 88 = ₹17,160
+    # STT SELL side = 0.0625% of 17160 = ~₹10.73
+    assert 1050 <= fees.stt_paise <= 1100
+    # Stamp duty SELL side = 0
+    assert fees.stamp_paise == 0
+
+
+def test_charges_for_returns_none_for_non_options():
+    """Futures and equity formulas differ — return None rather than pollute."""
+    from khata.adapters.dhan.fees import compute_fees
+    from khata.core.adapter import (
+        CanonicalExecution,
+        CanonicalFees,
+    )
+    from khata.core.adapter import (
+        InstrumentType as IT,
+    )
+    from khata.core.adapter import (
+        Side as S,
+    )
+
+    eq_exec = CanonicalExecution(
+        broker="dhan",
+        broker_trade_id="x",
+        broker_order_id="x",
+        symbol="RELIANCE",
+        underlying="RELIANCE",
+        exchange="NSE",
+        segment="NSE_EQ",
+        instrument_type=IT.EQ,
+        option_type=None,
+        strike_paise=None,
+        expiry=None,
+        side=S.BUY,
+        qty=10,
+        price_paise=300000,
+        ts=datetime(2026, 4, 20, tzinfo=UTC),
+        product_type="CNC",
+        fees=CanonicalFees(),
+        raw={},
+    )
+    assert compute_fees(eq_exec) is None
