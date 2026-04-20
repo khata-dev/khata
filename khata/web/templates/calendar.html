@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ month_name(month) }} {{ year }} · khata{% endblock %}
+
+{% block content %}
+<section class="calendar-page">
+  <header class="page-header">
+    <div class="page-title">
+      <h1>{{ month_name(month) }} {{ year }}</h1>
+      <div class="page-sub">
+        {{ total_trades }} trade{{ '' if total_trades == 1 else 's' }} across {{ active_days }} active day{{ '' if active_days == 1 else 's' }}
+      </div>
+    </div>
+    <div class="page-stat {{ 'win' if total_net > 0 else 'loss' if total_net < 0 else 'neutral' }}">
+      <div class="stat-label">month P&amp;L</div>
+      <div class="stat-value">{{ fmt_rupees(total_net) }}</div>
+    </div>
+  </header>
+
+  <nav class="month-nav">
+    <a class="btn" href="/calendar/{{ prev_y }}/{{ prev_m }}" aria-label="previous month">←</a>
+    <a class="btn btn-muted" href="/calendar/{{ today.year }}/{{ today.month }}">this month</a>
+    <a class="btn" href="/calendar/{{ next_y }}/{{ next_m }}" aria-label="next month">→</a>
+  </nav>
+
+  <div class="calendar">
+    <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div>
+    <div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div>
+    <div class="dow">Sun</div>
+
+    {% for week in grid %}
+      {% for d in week %}
+        {% if d is none %}
+          <div class="day day-empty"></div>
+        {% else %}
+          {% set iso = d.isoformat() %}
+          {% set s = summary.get(iso) %}
+          {% set net = s.net_paise if s else 0 %}
+          <a class="day {% if d == today %}day-today{% endif %} {% if s %}{% if net > 0 %}day-win{% elif net < 0 %}day-loss{% else %}day-neutral{% endif %}{% endif %} {% if is_expiry_day(d) %}day-expiry{% endif %}"
+             href="/day/{{ iso }}">
+            <span class="day-num">{{ d.day }}</span>
+            {% if is_expiry_day(d) %}<span class="expiry-dot" title="weekly expiry">•</span>{% endif %}
+            {% if s %}
+              <span class="day-pnl">{{ fmt_rupees(net) }}</span>
+              <span class="day-count">{{ s.n }} trade{{ '' if s.n == 1 else 's' }}</span>
+            {% endif %}
+          </a>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+
+  <footer class="legend">
+    <span class="swatch swatch-win"></span> win day
+    <span class="swatch swatch-loss"></span> loss day
+    <span class="swatch swatch-expiry"></span> weekly expiry (Tue/Thu)
+  </footer>
+</section>
+{% endblock %}

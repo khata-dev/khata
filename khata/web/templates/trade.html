@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ trade.symbol }} · khata{% endblock %}
+
+{% block content %}
+<section class="trade-page">
+  <header class="page-header">
+    <div class="page-title">
+      <h1>{{ trade.symbol }}</h1>
+      <div class="page-sub">
+        <a href="/day/{{ trade.entry_ts[:10] }}">← {{ trade.entry_ts[:10] }}</a>
+        · {{ trade.direction }}
+        · qty {{ trade.qty }}
+        {% if trade.expiry %} · expiry {{ trade.expiry }}{% endif %}
+      </div>
+    </div>
+    <div class="page-stat {{ 'win' if trade.net_pnl_paise and trade.net_pnl_paise > 0 else 'loss' if trade.net_pnl_paise and trade.net_pnl_paise < 0 else 'neutral' }}">
+      <div class="stat-label">net P&amp;L</div>
+      <div class="stat-value">{{ fmt_rupees(trade.net_pnl_paise) if trade.net_pnl_paise is not none else '—' }}</div>
+    </div>
+  </header>
+
+  <div class="trade-meta">
+    <div><div class="lbl">avg entry</div><div class="val mono">{{ fmt_rupees(trade.avg_entry_paise) }}</div></div>
+    <div><div class="lbl">avg exit</div><div class="val mono">{{ fmt_rupees(trade.avg_exit_paise) if trade.avg_exit_paise else '—' }}</div></div>
+    <div><div class="lbl">gross P&amp;L</div><div class="val mono">{{ fmt_rupees(trade.gross_pnl_paise) if trade.gross_pnl_paise is not none else '—' }}</div></div>
+    <div><div class="lbl">fees</div><div class="val mono subtle">{{ fmt_rupees(trade.fees_paise) }}</div></div>
+    <div><div class="lbl">duration</div><div class="val mono">{{ (trade.duration_s // 60) if trade.duration_s else '—' }}m</div></div>
+    <div><div class="lbl">status</div><div class="val"><span class="badge badge-{{ trade.status|lower }}">{{ trade.status }}</span></div></div>
+  </div>
+
+  {% if executions %}
+  <section>
+    <h2>Fills</h2>
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>time</th>
+          <th>role</th>
+          <th>side</th>
+          <th class="num">qty</th>
+          <th class="num">price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in executions %}
+        <tr>
+          <td class="mono">{{ fmt_time_ist(e.ts) }}</td>
+          <td><span class="badge badge-muted">{{ e.leg_role }}</span></td>
+          <td><span class="badge badge-{{ e.side|lower }}">{{ e.side }}</span></td>
+          <td class="num mono">{{ e.qty_contributed }}</td>
+          <td class="num mono">{{ fmt_rupees(e.price_paise) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <section class="tag-section">
+    <h2>Tags</h2>
+    {% include "partials/tag_list.html" with context %}
+  </section>
+
+  <section class="note-section">
+    <h2>Notes</h2>
+    {% include "partials/note_block.html" with context %}
+  </section>
+</section>
+{% endblock %}

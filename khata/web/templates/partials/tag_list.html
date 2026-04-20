@@ -1,0 +1,27 @@
+<div class="tag-list" id="tag-list">
+  <div class="tag-chips">
+    {% for tag in tags %}
+    <span class="tag tag-{{ tag.kind }}">
+      {{ tag.name }}
+      <button hx-delete="/tags/trade/{{ trade_id }}/{{ tag.id }}"
+              hx-target="#tag-list"
+              hx-swap="outerHTML"
+              aria-label="remove tag {{ tag.name }}">×</button>
+    </span>
+    {% endfor %}
+    {% if not tags %}<span class="subtle">no tags yet</span>{% endif %}
+  </div>
+  <form class="tag-form"
+        hx-post="/tags/trade/{{ trade_id }}"
+        hx-target="#tag-list"
+        hx-swap="outerHTML">
+    <select name="kind">
+      <option value="custom">custom</option>
+      <option value="setup">setup</option>
+      <option value="psych">psych</option>
+      <option value="mistake">mistake</option>
+    </select>
+    <input type="text" name="name" placeholder="add tag…" required>
+    <button type="submit" class="btn btn-muted">add</button>
+  </form>
+</div>
