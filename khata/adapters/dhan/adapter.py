@@ -38,16 +38,21 @@ class DhanAdapter(BrokerAdapter):
         since_date = since.astimezone(UTC).date()
 
         rows: list[dict] = []
-        # For today only → /trades (cheaper, more fields).
         if since_date >= today:
             rows.extend(client.get_trades())
         else:
-            # Statement API for the backfill range, then /trades for today.
-            # Dhan caps statement queries at ~90 days — chunk if needed.
+            # Statement API: paginate until empty. Dhan caps history queries at
+            # ~90 days per call, so chunk date ranges too.
             cur = since_date
             while cur < today:
                 chunk_end = min(cur + timedelta(days=89), today - timedelta(days=1))
-                rows.extend(client.get_trades_range(cur, chunk_end))
+                page = 0
+                while page < 100:  # safety bound
+                    chunk = client.get_trades_range(cur, chunk_end, page=page)
+                    if not chunk:
+                        break
+                    rows.extend(chunk)
+                    page += 1
                 cur = chunk_end + timedelta(days=1)
             rows.extend(client.get_trades())
 
