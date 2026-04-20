@@ -49,9 +49,13 @@ class DhanClient:
         """Today's executions (trade book)."""
         return self._get("/trades")
 
-    def get_trades_range(self, from_date: date, to_date: date) -> list[dict]:
-        """Historical trades via Statement API. Dhan convention: YYYY-MM-DD path params."""
-        path = f"/trades/{from_date.isoformat()}/{to_date.isoformat()}"
+    def get_trades_range(self, from_date: date, to_date: date, page: int = 0) -> list[dict]:
+        """Historical trades via Statement API.
+
+        Path: GET /trades/{YYYY-MM-DD}/{YYYY-MM-DD}/{pageNumber}
+        Page size is ~20, newest-first. Caller paginates until an empty list.
+        """
+        path = f"/trades/{from_date.isoformat()}/{to_date.isoformat()}/{page}"
         return self._get(path)
 
     def get_positions(self) -> list[dict]:

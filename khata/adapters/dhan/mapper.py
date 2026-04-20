@@ -65,10 +65,15 @@ _OPTION_TYPE = {
 
 
 def _parse_ts(raw: str | None) -> datetime:
-    if not raw:
+    """Parse Dhan timestamps. IST-local, no tz suffix. Two formats observed:
+    - '/trades' (today):   'YYYY-MM-DD HH:MM:SS'
+    - '/trades/.../{p}' (history): 'YYYY-MM-DDTHH:MM:SS'
+    The literal string 'NA' appears on some history rows.
+    """
+    if not raw or raw.strip() in ("", "NA"):
         return datetime.now(UTC)
-    # Dhan timestamps are IST, "YYYY-MM-DD HH:MM:SS"
-    dt = datetime.strptime(raw.strip(), "%Y-%m-%d %H:%M:%S").replace(tzinfo=IST)
+    s = raw.strip().replace("T", " ")
+    dt = datetime.strptime(s, "%Y-%m-%d %H:%M:%S").replace(tzinfo=IST)
     return dt.astimezone(UTC)
 
 
@@ -82,13 +87,14 @@ def _parse_date(raw: str | None) -> date | None:
 
 
 def _underlying_from_symbol(trading_symbol: str | None, custom_symbol: str | None) -> str | None:
-    """Best-effort underlying extraction. e.g. 'NIFTY25APR25350CE' → 'NIFTY'."""
+    """Best-effort underlying extraction.
+    Handles both 'NIFTY25APR25350CE' and 'NIFTY 21 APR 24300 PUT'.
+    """
     src = custom_symbol or trading_symbol or ""
-    # Strip digits-and-suffix tail
     for i, ch in enumerate(src):
         if ch.isdigit():
-            return src[:i] or None
-    return src or None
+            return src[:i].strip() or None
+    return src.strip() or None
 
 
 def map_trade(row: dict, broker: str = "dhan") -> CanonicalExecution:
@@ -114,9 +120,16 @@ def map_trade(row: dict, broker: str = "dhan") -> CanonicalExecution:
         ipft_paise=rupees_to_paise(row.get("ipft")),
     )
 
+    # History rows return exchangeTradeId='0' (orders are aggregated per-day, not per-fill).
+    # Fall back to orderId in that case so our UNIQUE(broker, broker_trade_id) holds.
+    raw_trade_id = str(row.get("exchangeTradeId") or "").strip()
+    broker_trade_id = (
+        raw_trade_id if raw_trade_id and raw_trade_id != "0" else str(row.get("orderId") or "")
+    )
+
     return CanonicalExecution(
         broker=broker,
-        broker_trade_id=str(row.get("exchangeTradeId") or row.get("orderId") or ""),
+        broker_trade_id=broker_trade_id,
         broker_order_id=str(row.get("orderId") or "") or None,
         symbol=row.get("customSymbol") or row.get("tradingSymbol") or "",
         underlying=_underlying_from_symbol(row.get("tradingSymbol"), row.get("customSymbol")),
