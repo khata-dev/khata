@@ -60,6 +60,7 @@ _OPTION_TYPE = {
     "PUT": OptionType.PE,
     "PE": OptionType.PE,
     "": None,
+    "NA": None,
     None: None,
 }
 
@@ -87,14 +88,69 @@ def _parse_date(raw: str | None) -> date | None:
 
 
 def _underlying_from_symbol(trading_symbol: str | None, custom_symbol: str | None) -> str | None:
-    """Best-effort underlying extraction.
-    Handles both 'NIFTY25APR25350CE' and 'NIFTY 21 APR 24300 PUT'.
+    """Extract the underlying from a Dhan symbol.
+
+    Three observed formats in the wild:
+      - 'NIFTY24APR2624300PE'       (concat, history equity/options)
+      - 'NIFTY 21 APR 24300 PUT'    (space-separated, history options customSymbol)
+      - 'NIFTY-Apr2026-24300-PE'    (hyphenated, today's /trades tradingSymbol)
+
+    The underlying is always the first token. Stop at first digit, hyphen, or
+    whitespace.
     """
     src = custom_symbol or trading_symbol or ""
     for i, ch in enumerate(src):
-        if ch.isdigit():
+        if ch.isdigit() or ch in "- \t":
             return src[:i].strip() or None
     return src.strip() or None
+
+
+def _option_type_from_symbol(
+    trading_symbol: str | None, custom_symbol: str | None
+) -> OptionType | None:
+    """Fallback option-type parser when drvOptionType is 'NA' or missing.
+
+    Checks the symbol tail for '-CE'/'-PE'/'CE'/'PE'/'CALL'/'PUT'.
+    """
+    src = (custom_symbol or trading_symbol or "").upper().strip()
+    if not src:
+        return None
+    for suffix, ot in (
+        ("-CE", OptionType.CE),
+        ("-PE", OptionType.PE),
+        (" CALL", OptionType.CE),
+        (" PUT", OptionType.PE),
+        ("CE", OptionType.CE),
+        ("PE", OptionType.PE),
+    ):
+        if src.endswith(suffix):
+            return ot
+    return None
+
+
+def _infer_instrument_type(row: dict) -> InstrumentType:
+    """Today's /trades omits the `instrument` field. Infer it.
+
+    Priority: explicit `instrument` → option markers → FNO segment fallback → EQ.
+    """
+    explicit = row.get("instrument") or ""
+    if explicit in _INSTRUMENT_TO_CANONICAL:
+        return _INSTRUMENT_TO_CANONICAL[explicit]
+
+    segment = (row.get("exchangeSegment") or "").upper()
+
+    has_option_markers = (
+        row.get("drvStrikePrice") not in (None, 0)
+        or (row.get("drvOptionType") or "").upper() in ("CALL", "PUT", "CE", "PE")
+        or _option_type_from_symbol(row.get("tradingSymbol"), row.get("customSymbol")) is not None
+    )
+
+    if has_option_markers:
+        return InstrumentType.OPT
+    if "FNO" in segment or "CURRENCY" in segment or "COMM" in segment:
+        # FNO segment without option markers → futures
+        return InstrumentType.FUT
+    return InstrumentType.EQ
 
 
 def map_trade(row: dict, broker: str = "dhan") -> CanonicalExecution:
@@ -102,8 +158,7 @@ def map_trade(row: dict, broker: str = "dhan") -> CanonicalExecution:
     segment = row.get("exchangeSegment") or ""
     exchange = _SEGMENT_TO_EXCHANGE.get(segment, segment.split("_")[0] or "NSE")
 
-    instrument_raw = row.get("instrument") or ""
-    instrument_type = _INSTRUMENT_TO_CANONICAL.get(instrument_raw, InstrumentType.EQ)
+    instrument_type = _infer_instrument_type(row)
 
     side = Side.BUY if (row.get("transactionType") or "").upper() == "BUY" else Side.SELL
 
@@ -136,7 +191,14 @@ def map_trade(row: dict, broker: str = "dhan") -> CanonicalExecution:
         exchange=exchange,
         segment=segment or exchange,
         instrument_type=instrument_type,
-        option_type=_OPTION_TYPE.get(row.get("drvOptionType")),
+        option_type=(
+            _OPTION_TYPE.get(row.get("drvOptionType"))
+            or (
+                _option_type_from_symbol(row.get("tradingSymbol"), row.get("customSymbol"))
+                if instrument_type == InstrumentType.OPT
+                else None
+            )
+        ),
         strike_paise=strike_paise,
         expiry=_parse_date(row.get("drvExpiryDate")),
         side=side,

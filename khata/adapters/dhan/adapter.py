@@ -5,11 +5,13 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, timedelta
 
 from khata.adapters.dhan.client import DhanClient
+from khata.adapters.dhan.fees import compute_fees
 from khata.adapters.dhan.mapper import map_trade
 from khata.core.adapter import (
     AuthFlow,
     BrokerAdapter,
     CanonicalExecution,
+    CanonicalFees,
     CanonicalOrder,
     CanonicalPosition,
     Session,
@@ -57,6 +59,16 @@ class DhanAdapter(BrokerAdapter):
             rows.extend(client.get_trades())
 
         executions = [map_trade(r, broker=self.name) for r in rows]
+
+        # Today's /trades endpoint omits fee fields — they finalise at EOD.
+        # For any execution where fees are all zero, recompute from first
+        # principles. Historical rows already carry broker-reported fees.
+        for e in executions:
+            if e.fees.total_paise == 0:
+                recomputed = self.charges_for(e)
+                if recomputed is not None:
+                    e.fees = recomputed
+
         # Filter to `since` precisely (Statement API is date-granular).
         return [e for e in executions if e.ts >= since.astimezone(UTC)]
 
@@ -67,3 +79,9 @@ class DhanAdapter(BrokerAdapter):
     def fetch_orders(self, session: Session, on_date: date) -> list[CanonicalOrder]:
         # Stub: order-book mapper lands with the UI work.
         return []
+
+    def charges_for(self, execution: CanonicalExecution) -> CanonicalFees | None:
+        """Recompute Indian F&O charges when broker-reported fees are missing.
+        Options only for now; futures/equity return None.
+        """
+        return compute_fees(execution)
