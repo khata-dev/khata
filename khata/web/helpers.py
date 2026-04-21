@@ -79,7 +79,11 @@ def shift_day(d: date, delta: int) -> date:
     return d + timedelta(days=delta)
 
 
-# Indian weekly expiry days: NIFTY (NFO) weekly = Thursday (3 in Python weekday).
-# BSE/Sensex weekly = Tuesday (1). We mark both.
-def is_expiry_day(d: date) -> bool:
-    return d.weekday() in (1, 3)
+# Retained for compatibility — the web UI now derives expiry days from the
+# user's own trade history (see queries.expiry_days_in_range). This helper
+# defaults to False so templates without an `expiry_days` set don't light up
+# days that aren't actually expiries.
+def is_expiry_day(d: date, expiry_days: frozenset[date] | None = None) -> bool:
+    if expiry_days is None:
+        return False
+    return d in expiry_days

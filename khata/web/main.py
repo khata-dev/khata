@@ -26,7 +26,6 @@ TEMPLATES = Jinja2Templates(directory=HERE / "templates")
 TEMPLATES.env.globals.update(
     fmt_rupees=fmt_rupees,
     paise_to_rupees=paise_to_rupees,
-    is_expiry_day=H.is_expiry_day,
     month_name=H.month_name,
     fmt_time_ist=H.fmt_time_ist,
     today_iso=lambda: H.today_ist().isoformat(),
@@ -70,6 +69,9 @@ def create_app() -> FastAPI:
         grid = H.month_grid(year, month)
         prev_y, prev_m = H.prev_month(year, month)
         next_y, next_m = H.next_month(year, month)
+        expiry_days = Q.expiry_days_in_range(
+            conn, user_id, date(year, month, 1), date(next_y, next_m, 1)
+        )
 
         # Month totals
         total_net = sum((d.get("net_paise") or 0) for d in summary.values())
@@ -84,6 +86,7 @@ def create_app() -> FastAPI:
                 "month": month,
                 "grid": grid,
                 "summary": summary,
+                "expiry_days": expiry_days,
                 "prev_y": prev_y,
                 "prev_m": prev_m,
                 "next_y": next_y,
@@ -109,6 +112,8 @@ def create_app() -> FastAPI:
         trades = Q.trades_on_day(conn, user_id, d)
         totals = Q.day_totals(trades)
         note = Q.get_daily_note(conn, user_id, d)
+        # `d` counts as an expiry day if any trade in the user's book expires on it.
+        expiry_days = Q.expiry_days_in_range(conn, user_id, d, H.shift_day(d, 1))
         return TEMPLATES.TemplateResponse(
             request,
             "day.html",
@@ -120,7 +125,7 @@ def create_app() -> FastAPI:
                 "totals": totals,
                 "note": note,
                 "endpoint": f"/notes/day/{d.isoformat()}",
-                "is_expiry": H.is_expiry_day(d),
+                "is_expiry": d in expiry_days,
             },
         )
 
