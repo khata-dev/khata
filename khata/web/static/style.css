@@ -436,9 +436,16 @@ h2 {
 }
 .note-block .editor-toolbar button.active,
 .note-block .editor-toolbar button.fa.active {
-  background: var(--surface);
-  color: var(--accent) !important;
-  border-color: var(--border);
+  background: var(--accent);
+  color: var(--accent-ink) !important;
+  border-color: var(--accent);
+}
+/* Preview/fullscreen dim other buttons. Keep them readable so the user can
+   still see the preview button to click it again and return. */
+.note-block .editor-toolbar.disabled-for-preview button:not(.no-disable),
+.note-block .editor-toolbar button[disabled] {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 .note-block .editor-toolbar i.separator { border-color: var(--border); }
 
