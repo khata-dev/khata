@@ -152,6 +152,27 @@ def reset(yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation
     console.print("[green]✓[/] reset complete")
 
 
+@app.command()
+def web(
+    host: str = typer.Option("127.0.0.1", help="Bind address (localhost-only by default)"),
+    port: int = typer.Option(8000, help="Port"),
+    reload: bool = typer.Option(
+        True, "--reload/--no-reload", help="Auto-reload on code change (disable for deploy)"
+    ),
+) -> None:
+    """Start the khata web UI (FastAPI + HTMX)."""
+    import uvicorn
+
+    console.print(f"→ starting khata web at [cyan]http://{host}:{port}[/] (reload={reload})")
+    uvicorn.run(
+        "khata.web.main:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_level="info",
+    )
+
+
 @app.command("dump-executions")
 def dump_executions(limit: int = 20) -> None:
     """Print the last N executions (debug)."""

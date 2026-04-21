@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ d.strftime('%a, %d %b %Y') }} · khata{% endblock %}
+
+{% block content %}
+<section class="day-page">
+  <header class="page-header">
+    <div class="page-title">
+      <h1>{{ d.strftime('%a, %d %b %Y') }}{% if is_expiry %} <span class="badge badge-expiry">expiry</span>{% endif %}</h1>
+      <div class="page-sub">
+        <a href="/calendar/{{ d.year }}/{{ d.month }}">← {{ d.strftime('%B %Y') }}</a>
+      </div>
+    </div>
+    {% if totals.count %}
+    <div class="page-stat {{ 'win' if totals.net_paise > 0 else 'loss' if totals.net_paise < 0 else 'neutral' }}">
+      <div class="stat-label">day P&amp;L</div>
+      <div class="stat-value">{{ fmt_rupees(totals.net_paise) }}</div>
+    </div>
+    {% endif %}
+  </header>
+
+  <nav class="month-nav">
+    <a class="btn" href="/day/{{ prev_day.isoformat() }}" aria-label="previous day">←</a>
+    <a class="btn btn-muted" href="/day/{{ d.isoformat() }}">this day</a>
+    <a class="btn" href="/day/{{ next_day.isoformat() }}" aria-label="next day">→</a>
+  </nav>
+
+  {% if trades %}
+  <div class="summary-strip">
+    <div><div class="lbl">trades</div><div class="val">{{ totals.count }}</div></div>
+    <div><div class="lbl">wins</div><div class="val">{{ totals.wins }}</div></div>
+    <div><div class="lbl">losses</div><div class="val">{{ totals.losses }}</div></div>
+    <div><div class="lbl">fees</div><div class="val">{{ fmt_rupees(totals.fees_paise) }}</div></div>
+  </div>
+
+  <table class="trade-table">
+    <thead>
+      <tr>
+        <th>time</th>
+        <th>symbol</th>
+        <th>dir</th>
+        <th class="num">qty</th>
+        <th class="num">entry</th>
+        <th class="num">exit</th>
+        <th class="num">net P&amp;L</th>
+        <th class="num">fees</th>
+        <th>status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in trades %}
+      <tr>
+        <td class="mono">{{ fmt_time_ist(t.entry_ts) }}</td>
+        <td><a href="/trade/{{ t.id }}" class="sym">{{ t.symbol }}</a></td>
+        <td><span class="badge badge-{{ t.direction|lower }}">{{ t.direction }}</span></td>
+        <td class="num mono">{{ t.qty }}</td>
+        <td class="num mono">{{ fmt_rupees(t.avg_entry_paise) }}</td>
+        <td class="num mono">{{ fmt_rupees(t.avg_exit_paise) if t.avg_exit_paise else '—' }}</td>
+        <td class="num mono {% if t.net_pnl_paise and t.net_pnl_paise > 0 %}win{% elif t.net_pnl_paise and t.net_pnl_paise < 0 %}loss{% endif %}">
+          {{ fmt_rupees(t.net_pnl_paise) if t.net_pnl_paise is not none else '—' }}
+        </td>
+        <td class="num mono subtle">{{ fmt_rupees(t.fees_paise) }}</td>
+        <td><span class="badge badge-{{ t.status|lower }}">{{ t.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty">No trades on this day.</p>
+  {% endif %}
+
+  <section class="note-section">
+    <h2>Daily reflection</h2>
+    {% include "partials/note_block.html" with context %}
+  </section>
+</section>
+{% endblock %}

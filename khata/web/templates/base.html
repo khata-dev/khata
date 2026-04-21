@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)">
+  <title>{% block title %}khata{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a href="/" class="brand">
+      <svg class="brand-mark" viewBox="0 0 120 120" width="32" height="32" aria-hidden="true">
+        <rect width="120" height="120" rx="24" fill="var(--accent)"/>
+        <line x1="40" y1="28" x2="40" y2="92" stroke="var(--bg)" stroke-width="6" stroke-linecap="round"/>
+        <rect x="31" y="44" width="18" height="32" fill="none" stroke="var(--bg)" stroke-width="6"/>
+        <line x1="80" y1="20" x2="80" y2="100" stroke="var(--bg)" stroke-width="6" stroke-linecap="round"/>
+        <rect x="71" y="34" width="18" height="44" fill="var(--bg)"/>
+      </svg>
+      <span>khata</span>
+    </a>
+    <nav class="site-nav">
+      <a href="/">Calendar</a>
+      <a href="/day/{{ today_iso() }}">Today</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

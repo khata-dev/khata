@@ -1,0 +1,17 @@
+<div class="note-block" id="note-block">
+  <form hx-post="{{ endpoint }}"
+        hx-target="#note-block"
+        hx-swap="outerHTML">
+    <textarea name="body"
+              rows="6"
+              placeholder="What happened? What did you learn? No formatting required."
+              hx-post="{{ endpoint }}"
+              hx-target="#note-block"
+              hx-swap="outerHTML"
+              hx-trigger="blur changed">{{ note.body_md if note else '' }}</textarea>
+    <div class="note-meta">
+      <span class="subtle">{% if note and note.updated_at %}saved {{ note.updated_at[:19].replace('T', ' ') }} UTC{% else %}not saved yet{% endif %}</span>
+      <button type="submit" class="btn btn-muted">save</button>
+    </div>
+  </form>
+</div>
