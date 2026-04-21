@@ -152,6 +152,7 @@ def test_tag_add_and_remove(client):
 
     # Find the tag id in the DB to build the delete URL
     import os as _os
+
     conn = sqlite3.connect(_os.environ["KHATA_DB_PATH"])
     conn.row_factory = sqlite3.Row
     tag_id = conn.execute("SELECT id FROM tags WHERE name='fomo'").fetchone()["id"]
