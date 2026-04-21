@@ -1,0 +1,21 @@
+{% if attachments %}
+<section class="attachments">
+  <h2>Attachments</h2>
+  <div class="attachment-grid">
+    {% for a in attachments %}
+      {% if a.kind == 'image' %}
+        <figure class="attachment">
+          <a href="/media/{{ a.path }}" target="_blank" rel="noopener">
+            <img src="/media/{{ a.path }}" alt="{{ a.caption or '' }}" loading="lazy">
+          </a>
+          {% if a.caption %}<figcaption>{{ a.caption }}</figcaption>{% endif %}
+        </figure>
+      {% else %}
+        <a class="attachment-file" href="/media/{{ a.path }}" target="_blank" rel="noopener">
+          {{ a.caption or a.path.split('/')[-1] }}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
