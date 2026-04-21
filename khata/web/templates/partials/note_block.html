@@ -1,15 +1,15 @@
 <div class="note-block" id="note-block">
   <form hx-post="{{ endpoint }}"
-        hx-target="#note-block"
+        hx-target="#note-meta-stamp"
         hx-swap="outerHTML"
+        hx-trigger="submit, khata-save"
         onsubmit="if (window._khataEasyMDE) window._khataEasyMDE.codemirror.save();">
     <textarea name="body"
               class="khata-editor"
               data-upload="{{ upload_endpoint }}"
-              data-autosave="{{ endpoint }}"
               placeholder="What happened? What did you learn? Paste or drop an image to embed it.">{{ note.body_md if note else '' }}</textarea>
     <div class="note-meta">
-      <span class="subtle">{% if note and note.updated_at %}saved {{ note.updated_at[:19].replace('T', ' ') }} UTC{% else %}not saved yet{% endif %}</span>
+      {% include "partials/note_meta.html" %}
       <button type="submit" class="btn btn-muted">save</button>
     </div>
   </form>
