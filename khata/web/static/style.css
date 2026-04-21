@@ -372,48 +372,121 @@ h2 {
   font-size: 0.8rem;
 }
 
-/* EasyMDE surface tuning — adopt the app palette, drop the default blue. */
-.note-block .EasyMDEContainer {
-  font-family: var(--sans);
-}
+/* ── EasyMDE surface tuning ──────────────────────────────────────
+   Adopt the app palette; keep hover/active states subtle rather than
+   flooding buttons with accent. Uses `button.fa` since EasyMDE
+   renders toolbar items as <button class="fa fa-bold"> etc.
+*/
+.note-block .EasyMDEContainer { font-family: var(--sans); }
+
 .note-block .EasyMDEContainer .CodeMirror {
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  line-height: 1.55;
 }
 .note-block .EasyMDEContainer .CodeMirror .CodeMirror-cursor { border-color: var(--text); }
+.note-block .EasyMDEContainer .CodeMirror-selected { background: var(--surface-2) !important; }
+.note-block .EasyMDEContainer .CodeMirror pre.CodeMirror-line,
+.note-block .EasyMDEContainer .CodeMirror pre.CodeMirror-line-like {
+  color: var(--text);
+}
+.note-block .EasyMDEContainer .cm-header,
+.note-block .EasyMDEContainer .cm-header-1,
+.note-block .EasyMDEContainer .cm-header-2,
+.note-block .EasyMDEContainer .cm-header-3 {
+  color: var(--text);
+  font-weight: 700;
+}
+.note-block .EasyMDEContainer .cm-link,
+.note-block .EasyMDEContainer .cm-url { color: var(--accent); }
+.note-block .EasyMDEContainer .cm-quote { color: var(--muted); font-style: italic; }
+.note-block .EasyMDEContainer .cm-strong { font-weight: 700; }
+.note-block .EasyMDEContainer .cm-em { font-style: italic; }
+.note-block .EasyMDEContainer .cm-comment { color: var(--muted); }
+.note-block .EasyMDEContainer .cm-s-easymde .CodeMirror-code > div > pre { background: transparent; }
+
 .note-block .editor-toolbar {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-bottom: none;
   border-radius: var(--radius) var(--radius) 0 0;
+  padding: 4px 6px;
   opacity: 1;
 }
-.note-block .editor-toolbar button {
-  color: var(--text) !important;
+.note-block .editor-toolbar::before,
+.note-block .editor-toolbar::after { border-bottom: 1px solid var(--border); }
+
+.note-block .editor-toolbar button,
+.note-block .editor-toolbar button.fa {
+  color: var(--muted) !important;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 .note-block .editor-toolbar button:hover,
-.note-block .editor-toolbar button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink) !important;
+.note-block .editor-toolbar button.fa:hover {
+  background: var(--surface);
+  color: var(--text) !important;
+  border-color: var(--border);
 }
-.note-block .editor-toolbar.fullscreen { background: var(--surface); }
-.note-block .editor-statusbar { color: var(--muted); }
+.note-block .editor-toolbar button.active,
+.note-block .editor-toolbar button.fa.active {
+  background: var(--surface);
+  color: var(--accent) !important;
+  border-color: var(--border);
+}
+.note-block .editor-toolbar i.separator { border-color: var(--border); }
+
+.note-block .editor-toolbar.fullscreen { background: var(--surface-2); }
+.note-block .editor-toolbar.fullscreen::before,
+.note-block .editor-toolbar.fullscreen::after { background: transparent; }
+
+.note-block .editor-statusbar {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding-top: 6px;
+}
+
 .note-block .editor-preview,
 .note-block .editor-preview-side {
   background: var(--surface-2);
   color: var(--text);
+  border: 1px solid var(--border);
+  padding: 14px 18px;
+  line-height: 1.55;
+}
+.note-block .editor-preview h1,
+.note-block .editor-preview h2,
+.note-block .editor-preview h3,
+.note-block .editor-preview-side h1,
+.note-block .editor-preview-side h2,
+.note-block .editor-preview-side h3 {
+  color: var(--text);
+  margin-top: 0.4em;
+}
+.note-block .editor-preview a,
+.note-block .editor-preview-side a { color: var(--accent); }
+.note-block .editor-preview code,
+.note-block .editor-preview-side code {
+  background: var(--surface);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.9em;
 }
 .note-block .editor-preview img,
 .note-block .editor-preview-side img {
   max-width: 100%;
   border-radius: var(--radius);
+  display: block;
+  margin: 8px 0;
 }
-.note-block .CodeMirror-fullscreen,
-.note-block .editor-preview-side { border-color: var(--border); }
-.note-block .CodeMirror pre.CodeMirror-line code { color: var(--text); }
+.note-block .editor-preview-side { border-left: 1px solid var(--border); }
+.note-block .CodeMirror-fullscreen { border-color: var(--border); }
 
 /* ── attachments gallery ─────────────────────────────────────────── */
 .attachments { margin-top: 24px; }
