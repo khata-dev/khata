@@ -35,10 +35,10 @@
           {% set iso = d.isoformat() %}
           {% set s = summary.get(iso) %}
           {% set net = s.net_paise if s else 0 %}
-          <a class="day {% if d == today %}day-today{% endif %} {% if s %}{% if net > 0 %}day-win{% elif net < 0 %}day-loss{% else %}day-neutral{% endif %}{% endif %} {% if is_expiry_day(d) %}day-expiry{% endif %}"
+          <a class="day {% if d == today %}day-today{% endif %} {% if s %}{% if net > 0 %}day-win{% elif net < 0 %}day-loss{% else %}day-neutral{% endif %}{% endif %} {% if d in expiry_days %}day-expiry{% endif %}"
              href="/day/{{ iso }}">
             <span class="day-num">{{ d.day }}</span>
-            {% if is_expiry_day(d) %}<span class="expiry-dot" title="weekly expiry">•</span>{% endif %}
+            {% if d in expiry_days %}<span class="expiry-dot" title="expiry day">•</span>{% endif %}
             {% if s %}
               <span class="day-pnl">{{ fmt_rupees(net) }}</span>
               <span class="day-count">{{ s.n }} trade{{ '' if s.n == 1 else 's' }}</span>
@@ -52,7 +52,7 @@
   <footer class="legend">
     <span class="swatch swatch-win"></span> win day
     <span class="swatch swatch-loss"></span> loss day
-    <span class="swatch swatch-expiry"></span> weekly expiry (Tue/Thu)
+    <span class="swatch swatch-expiry"></span> expiry of a contract you traded
   </footer>
 </section>
 {% endblock %}

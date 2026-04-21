@@ -8,6 +8,35 @@ from typing import Any
 
 
 # ── calendar ───────────────────────────────────────────────────────────
+def expiry_days_in_range(
+    conn: sqlite3.Connection, user_id: int, start: date, end_excl: date
+) -> frozenset[date]:
+    """Distinct `trades.expiry` values falling inside [start, end_excl).
+
+    Used to mark calendar days the user actually had an expiring contract on,
+    rather than hardcoding Tue/Thu. Empty set if the user has no derivative
+    trades or no data yet.
+    """
+    rows = conn.execute(
+        """
+        SELECT DISTINCT expiry
+        FROM trades
+        WHERE user_id = ?
+          AND expiry IS NOT NULL
+          AND expiry >= ?
+          AND expiry < ?
+        """,
+        (user_id, start.isoformat(), end_excl.isoformat()),
+    ).fetchall()
+    out: set[date] = set()
+    for r in rows:
+        try:
+            out.add(date.fromisoformat(r["expiry"]))
+        except (TypeError, ValueError):
+            continue
+    return frozenset(out)
+
+
 def month_summary_by_day(
     conn: sqlite3.Connection, user_id: int, year: int, month: int
 ) -> dict[str, dict[str, Any]]:
