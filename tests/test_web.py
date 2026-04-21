@@ -137,9 +137,13 @@ def test_trade_404(client):
 
 
 def test_note_save_and_reload(client):
+    # POST returns ONLY the saved-at stamp partial (not the full editor),
+    # so EasyMDE doesn't double-mount. The body itself is checked on reload.
     r = client.post("/notes/trade/1", data={"body": "First thoughts on this trade"})
     assert r.status_code == 200
-    assert "First thoughts" in r.text
+    assert 'id="note-meta-stamp"' in r.text
+    assert "saved" in r.text
+    assert "First thoughts" not in r.text  # editor not re-rendered
     # Reload the page and confirm note persisted
     r2 = client.get("/trade/1")
     assert "First thoughts" in r2.text
@@ -167,7 +171,8 @@ def test_tag_add_and_remove(client):
 def test_daily_note_save(client):
     r = client.post("/notes/day/2026-04-15", data={"body": "Revenge traded after the morning loss"})
     assert r.status_code == 200
-    assert "Revenge traded" in r.text
+    assert 'id="note-meta-stamp"' in r.text
+    assert "Revenge traded" not in r.text  # meta partial only
 
     r2 = client.get("/day/2026-04-15")
     assert "Revenge traded" in r2.text

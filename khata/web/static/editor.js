@@ -60,23 +60,22 @@
       previewRender: (text) => easy.markdown(text),
     });
 
-    // Keep the native textarea's value in sync so HTMX form submission works.
+    // Keep the native textarea's value in sync.
     easy.codemirror.on("change", () => easy.codemirror.save());
 
-    // Keep a handle so form submit can flush before send.
-    window._khataEasyMDE = easy;
-
-    // HTMX replaces #note-block after POST → the old CodeMirror DOM gets
-    // unmounted. On htmx:afterSwap, re-wire whatever landed.
-    document.body.addEventListener("htmx:afterSwap", (ev) => {
-      if (ev.target && ev.target.id === "note-block") {
-        const t = document.querySelector("#note-block textarea.khata-editor");
-        if (t) {
-          delete t.dataset.khataMounted;
-          wire(t);
-        }
+    // Trigger an HTMX save when the CodeMirror area loses focus. The form's
+    // hx-trigger includes 'khata-save', so this submits without re-rendering
+    // the editor DOM (the server returns just the saved-at stamp).
+    const form = textarea.closest("form");
+    easy.codemirror.on("blur", () => {
+      easy.codemirror.save();
+      if (form && window.htmx) {
+        window.htmx.trigger(form, "khata-save");
       }
     });
+
+    // Keep a handle so any form-submit onsubmit hook can flush before send.
+    window._khataEasyMDE = easy;
   }
 
   function init() {

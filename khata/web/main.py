@@ -176,10 +176,12 @@ def create_app() -> FastAPI:
         if Q.trade_by_id(conn, user_id, trade_id) is None:
             raise HTTPException(404)
         note = Q.set_trade_note(conn, user_id, trade_id, body)
+        # Return only the saved-at stamp so HTMX doesn't re-render the editor
+        # DOM (which would cause EasyMDE to double-mount on every save).
         return TEMPLATES.TemplateResponse(
             request,
-            "partials/note_block.html",
-            {"note": note, "endpoint": f"/notes/trade/{trade_id}"},
+            "partials/note_meta.html",
+            {"note": note},
         )
 
     @app.post("/notes/day/{day}", response_class=HTMLResponse)
@@ -197,8 +199,8 @@ def create_app() -> FastAPI:
         note = Q.set_daily_note(conn, user_id, d, body)
         return TEMPLATES.TemplateResponse(
             request,
-            "partials/note_block.html",
-            {"note": note, "endpoint": f"/notes/day/{day}"},
+            "partials/note_meta.html",
+            {"note": note},
         )
 
     @app.post("/tags/trade/{trade_id}", response_class=HTMLResponse)
