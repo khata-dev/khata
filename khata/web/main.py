@@ -10,16 +10,18 @@ from datetime import date
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from khata.config import Config
 from khata.core.db import connect, init_schema, user_id_for
 from khata.core.money import fmt_rupees, paise_to_rupees
+from khata.web import attachments as A
 from khata.web import helpers as H
 from khata.web import queries as Q
+from khata.web.markdown import render as render_markdown
 
 HERE = Path(__file__).parent
 TEMPLATES = Jinja2Templates(directory=HERE / "templates")
@@ -29,6 +31,7 @@ TEMPLATES.env.globals.update(
     month_name=H.month_name,
     fmt_time_ist=H.fmt_time_ist,
     today_iso=lambda: H.today_ist().isoformat(),
+    render_markdown=render_markdown,
 )
 
 
@@ -114,6 +117,7 @@ def create_app() -> FastAPI:
         note = Q.get_daily_note(conn, user_id, d)
         # `d` counts as an expiry day if any trade in the user's book expires on it.
         expiry_days = Q.expiry_days_in_range(conn, user_id, d, H.shift_day(d, 1))
+        atts = A.attachments_for_note(conn, user_id, note["id"]) if note else []
         return TEMPLATES.TemplateResponse(
             request,
             "day.html",
@@ -124,7 +128,9 @@ def create_app() -> FastAPI:
                 "trades": trades,
                 "totals": totals,
                 "note": note,
+                "attachments": atts,
                 "endpoint": f"/notes/day/{d.isoformat()}",
+                "upload_endpoint": f"/upload/note/day/{d.isoformat()}",
                 "is_expiry": d in expiry_days,
             },
         )
@@ -142,6 +148,7 @@ def create_app() -> FastAPI:
         execs = Q.executions_for_trade(conn, trade_id)
         note = Q.get_trade_note(conn, user_id, trade_id)
         tags = Q.tags_for_trade(conn, user_id, trade_id)
+        atts = A.attachments_for_note(conn, user_id, note["id"]) if note else []
         return TEMPLATES.TemplateResponse(
             request,
             "trade.html",
@@ -149,9 +156,11 @@ def create_app() -> FastAPI:
                 "trade": trade,
                 "executions": execs,
                 "note": note,
+                "attachments": atts,
                 "tags": tags,
                 "trade_id": trade_id,
                 "endpoint": f"/notes/trade/{trade_id}",
+                "upload_endpoint": f"/upload/note/trade/{trade_id}",
             },
         )
 
@@ -211,6 +220,82 @@ def create_app() -> FastAPI:
             "partials/tag_list.html",
             {"tags": tags, "trade_id": trade_id},
         )
+
+    # ── uploads ────────────────────────────────────────────────────────
+    @app.post("/upload/note/day/{day}", response_class=JSONResponse)
+    def upload_to_day_note(
+        day: str,
+        file: Annotated[UploadFile, File()],
+        conn=Depends(_conn),
+        user_id: int = Depends(_user_id),
+    ):
+        try:
+            d = date.fromisoformat(day)
+        except ValueError as e:
+            raise HTTPException(400) from e
+        note_id = A.ensure_note_for_date(conn, user_id, d.isoformat())
+        abs_path, rel_path, size, mime, kind = A.save_upload(
+            cfg,
+            file.file,
+            original_filename=file.filename,
+            content_type=file.content_type,
+        )
+        A.record_attachment(
+            conn,
+            user_id=user_id,
+            note_id=note_id,
+            trade_id=None,
+            rel_path=rel_path,
+            mime=mime,
+            size=size,
+            kind=kind,
+            caption=file.filename,
+        )
+        # EasyMDE's imageUploadFunction expects a plain URL string; we return
+        # both a url and richer metadata so custom handlers can use the rest.
+        return {"data": {"filePath": f"/media/{rel_path}"}, "url": f"/media/{rel_path}"}
+
+    @app.post("/upload/note/trade/{trade_id}", response_class=JSONResponse)
+    def upload_to_trade_note(
+        trade_id: int,
+        file: Annotated[UploadFile, File()],
+        conn=Depends(_conn),
+        user_id: int = Depends(_user_id),
+    ):
+        if Q.trade_by_id(conn, user_id, trade_id) is None:
+            raise HTTPException(404)
+        note_id = A.ensure_note_for_trade(conn, user_id, trade_id)
+        abs_path, rel_path, size, mime, kind = A.save_upload(
+            cfg,
+            file.file,
+            original_filename=file.filename,
+            content_type=file.content_type,
+        )
+        A.record_attachment(
+            conn,
+            user_id=user_id,
+            note_id=note_id,
+            trade_id=None,
+            rel_path=rel_path,
+            mime=mime,
+            size=size,
+            kind=kind,
+            caption=file.filename,
+        )
+        return {"data": {"filePath": f"/media/{rel_path}"}, "url": f"/media/{rel_path}"}
+
+    @app.get("/media/{rel_path:path}")
+    def serve_media(rel_path: str):
+        # Resolve inside media_dir only — guard against path traversal.
+        base = cfg.media_dir.resolve()
+        target = (base / rel_path).resolve()
+        try:
+            target.relative_to(base)
+        except ValueError as e:
+            raise HTTPException(404) from e
+        if not target.is_file():
+            raise HTTPException(404)
+        return FileResponse(target)
 
     @app.delete("/tags/trade/{trade_id}/{tag_id}", response_class=HTMLResponse)
     def delete_trade_tag(

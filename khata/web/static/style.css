@@ -372,6 +372,89 @@ h2 {
   font-size: 0.8rem;
 }
 
+/* EasyMDE surface tuning — adopt the app palette, drop the default blue. */
+.note-block .EasyMDEContainer {
+  font-family: var(--sans);
+}
+.note-block .EasyMDEContainer .CodeMirror {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.note-block .EasyMDEContainer .CodeMirror .CodeMirror-cursor { border-color: var(--text); }
+.note-block .editor-toolbar {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: var(--radius) var(--radius) 0 0;
+  opacity: 1;
+}
+.note-block .editor-toolbar button {
+  color: var(--text) !important;
+}
+.note-block .editor-toolbar button:hover,
+.note-block .editor-toolbar button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink) !important;
+}
+.note-block .editor-toolbar.fullscreen { background: var(--surface); }
+.note-block .editor-statusbar { color: var(--muted); }
+.note-block .editor-preview,
+.note-block .editor-preview-side {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.note-block .editor-preview img,
+.note-block .editor-preview-side img {
+  max-width: 100%;
+  border-radius: var(--radius);
+}
+.note-block .CodeMirror-fullscreen,
+.note-block .editor-preview-side { border-color: var(--border); }
+.note-block .CodeMirror pre.CodeMirror-line code { color: var(--text); }
+
+/* ── attachments gallery ─────────────────────────────────────────── */
+.attachments { margin-top: 24px; }
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.attachment {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.attachment img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+}
+.attachment figcaption {
+  padding: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attachment-file {
+  display: inline-block;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
 .tag-list {
   background: var(--surface);
   border: 1px solid var(--border);
